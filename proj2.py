@@ -212,7 +212,7 @@ def runTesting(predictFunc):
 
     print mean_absolute_error(ans, ratings)
 
-# runTesting(cosNPredict)
+runTesting(cosNPredict)
 
 intputList = ["test5.txt", "test10.txt", "test20.txt"]
 outputList = ["result5.txt", "result10.txt", "result20.txt"]
