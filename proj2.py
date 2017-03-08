@@ -59,7 +59,19 @@ def cosSim(userVec, row):
         return 0.0
     return nu/((math.sqrt(denoL))*(math.sqrt(denoR)))
 
-def cosPredict(userVec, fullTrain, movie, num):
+def calIUF(trainMat):
+    iufArray = []
+    trainMat = ss.csr_matrix(trainMat)
+    for i in range(trainMat.shape[1]):
+        oneIUF = trainMat.getcol(i).count_nonzero()
+        if (oneIUF == 0):
+            iufArray.append(0)
+            continue
+        oneIUF = math.log10(200.0/oneIUF)
+        iufArray.append(oneIUF)
+    return iufArray
+
+def cosPredict(userVec, fullTrain, movie, num, IUF, iufArray):
     dist = []
     for row in fullTrain:
         if(int(row[movie]) == 0):
@@ -73,8 +85,12 @@ def cosPredict(userVec, fullTrain, movie, num):
         if(dist[kDist[i]] < 0.2):
             continue
         # print dist[kDist[i]]
-        nu += dist[kDist[i]] * fullTrain[kDist[i]][movie]
-        de += dist[kDist[i]]
+        if(IUF):
+            nu += dist[kDist[i]] * fullTrain[kDist[i]][movie] * iufArray [movie]
+            de += dist[kDist[i]]
+        else:
+            nu += dist[kDist[i]] * fullTrain[kDist[i]][movie]
+            de += dist[kDist[i]]
     if (nu < 0.00001):
         # print "guessing"
         return 3.0
@@ -103,7 +119,7 @@ def pearSim(userVec, row):
         return 0.0
     return nu/((math.sqrt(denoL))*(math.sqrt(denoR)))
 
-def pearPredict(userVec, fullTrain, movie, num):
+def pearPredict(userVec, fullTrain, movie, num, IUF, iufArray):
     uAvg = 0.0
     uRows,uCols = userVec.nonzero()
     for i in uCols:
@@ -128,8 +144,13 @@ def pearPredict(userVec, fullTrain, movie, num):
             continue
         # calculate trainAvg
         trainAvg = np.mean(fullTrain[kDist[i]])
-        nu += dist[kDist[i]] * (fullTrain[kDist[i]][movie] - trainAvg)
-        de += unSignedDist[kDist[i]]
+        if(IUF):
+            nu += dist[kDist[i]] * (fullTrain[kDist[i]][movie] - trainAvg) * iufArray [movie]
+            de += unSignedDist[kDist[i]] * iufArray [movie]
+        else:
+            nu += dist[kDist[i]] * (fullTrain[kDist[i]][movie] - trainAvg)
+            de += unSignedDist[kDist[i]]
+
     if (abs(nu) < 0.00001):
         return uAvg
     return nu/de + uAvg
@@ -152,7 +173,7 @@ def runPredict(inputFile, outputFile, predictFunc):
     end = time.time()
     print "time used to run: " , end - start
 
-def runTesting(predictFunc):
+def runTesting(IUF, predictFunc):
     fullTrain = genfromtxt('train.txt', delimiter='\t')
     # df = pd.DataFrame(fullTrain)
     train, test = train_test_split(fullTrain, test_size = 0.2, random_state=13)
@@ -180,9 +201,10 @@ def runTesting(predictFunc):
     test5 = ss.csr_matrix(test5)
 
     ratings = []
+    iufArray = calIUF (fullTrain)
     for co in testCo:
         # print co[0]
-        rating = predictFunc(test5[co[0]], train, co[1], 50)
+        rating = predictFunc(test5[co[0]], train, co[1], 100, IUF, iufArray)
         rating = int(round(rating))
         if (rating > 5):
             rating = 5
@@ -192,9 +214,10 @@ def runTesting(predictFunc):
 
     print mean_absolute_error(ans, ratings)
 
-runTesting(cosPredict)
+runTesting(False, pearPredict)
+runTesting(True, pearPredict)
 
-intputList = ["test5.txt", "test10.txt", "test20.txt"]
-outputList = ["result5.txt", "result10.txt", "result20.txt"]
-for i in range(3):
-    runPredict(intputList[i], outputList[i], cosPredict)
+# intputList = ["test5.txt", "test10.txt", "test20.txt"]
+# outputList = ["result5.txt", "result10.txt", "result20.txt"]
+# for i in range(3):
+#     runPredict(intputList[i], outputList[i], cosPredict)
