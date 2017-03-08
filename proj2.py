@@ -66,26 +66,6 @@ def cosPredict(userVec, fullTrain, movie, num):
             dist.append(0)
         else:
             dist.append(cosSim(userVec, row))
-    nu = 0.0
-    de = 0.0
-    for i in range(len(dist)):
-        if(dist[i] < 0.2):
-            continue
-        # print dist[kDist[i]]
-        nu += dist[i] * fullTrain[i][movie]
-        de += dist[i]
-    if (nu < 0.00001):
-        # print "guessing"
-        return 3.0
-    return nu/de
-
-def cosNPredict(userVec, fullTrain, movie, num):
-    dist = []
-    for row in fullTrain:
-        if(int(row[movie]) == 0):
-            dist.append(0)
-        else:
-            dist.append(cosSim(userVec, row))
     kDist = topN(dist, num)
     nu = 0.0
     de = 0.0
@@ -212,9 +192,9 @@ def runTesting(predictFunc):
 
     print mean_absolute_error(ans, ratings)
 
-runTesting(cosNPredict)
+runTesting(cosPredict)
 
 intputList = ["test5.txt", "test10.txt", "test20.txt"]
 outputList = ["result5.txt", "result10.txt", "result20.txt"]
 for i in range(3):
-    runPredict(intputList[i], outputList[i], cosNPredict)
+    runPredict(intputList[i], outputList[i], cosPredict)
