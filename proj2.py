@@ -163,8 +163,6 @@ def itemSimDOK(uAvgArr, fullTrainDOK, ii, jj):
 
 def itemBasePredict(uAvgArr, userIdx, fullTrainCSC, simMat, movie, num, iufArray, amp, threshold):
 
-    return uAvgArr[userIdx]
-
     dist = simMat[movie]
 
     unSignedDist = []
@@ -327,6 +325,39 @@ def runItemTesting(IUF, amp, threshold, knnNum, random, predictFunc):
 
     return mean_absolute_error(ans, ratings)
 
+def runStackedPredict(inputFile, outputFile, predictFunc):
+    fullTrain = genfromtxt('train.txt', delimiter='\t')
+    allTest, testCo = save2sparse(inputFile)
+    iufArray1 = calIUF (fullTrain)
+    iufArray2 = [1] * 1000
+    simMat = genfromtxt('simMat.csv', delimiter=',')
+    fullTrainDOK = ss.dok_matrix(fullTrain)
+    fullTrainCSC = ss.csc_matrix(fullTrain)
+    uAvgArr = []
+
+    for i in range(fullTrainDOK.shape[0]):
+        tmp = 0.0
+        tmpIdx = 0
+        for j in range(fullTrainDOK.shape[1]):
+            if (fullTrainDOK[i, j] > 0.1):
+                tmp += fullTrainDOK[i, j]
+                tmpIdx += 1
+        uAvgArr.append(tmp/tmpIdx)
+
+    start = time.time()
+    out = open(outputFile, 'w')
+    for co in testCo:
+        rating = predictFunc(allTest[co[0]], co[0], fullTrain, co[1], 30, iufArray2, 1.5, 0.2)
+        rating /= 2
+        rating = int(round(rating))
+        if (rating > 5):
+            rating = 5
+        if (rating < 1):
+            rating = 1
+        out.write(str(co[0]) + " " + str(co[1] + 1)+ " " + str(rating) + "\n")
+    end = time.time()
+    print "time used to run: " , end - start
+
 def fullUserTest(loop, IUF, amp, threshold, knnNum, predictFunc):
     start = time.time()
     a = 0.0
@@ -374,5 +405,11 @@ def runAllPrediction():
     for i in range(3):
         runPredict(False, 2, 0.2, 100, intputList[i], outputList[i], cosPredict)
 
-runAllPrediction()
+def runAllStackedPrediction():
+    intputList = ["test5.txt", "test10.txt", "test20.txt"]
+    outputList = ["result5555.txt", "result10000.txt", "result20000.txt"]
+    for i in range(3):
+        runStackedPredict(intputList[i], outputList[i], cosPredict)
+
+runAllStackedPrediction()
 # runAllTest()
