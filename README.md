@@ -1,4 +1,4 @@
-# Collaborative-Filtering
+# CollaborativeFiltering
 In this project, I doevelop different algorithms to make recommendations for movies.
 ## 1. User-Based Collaborative Filtering
     * Cosine similarity method
